@@ -39,14 +39,14 @@ An offline-capable, open-source collaborative Markdown workspace built with Yjs 
 
 ```powershell
 # From the repository root, on Windows PowerShell
-npm.cmd install
+npm.cmd ci
 npm.cmd run dev
 ```
 
 On macOS/Linux:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -79,7 +79,7 @@ npm.cmd run test:e2e # Requires npm.cmd exec -- playwright install chromium once
 
 End-to-end tests run a Chromium browser and start the relay/web processes automatically. Run `npm exec -- playwright install chromium` when Playwright reports a missing browser. The `.github/workflows/ci.yml` workflow executes build, tests, and two-browser scenarios on pull requests and pushes.
 
-**Dependency lockfile note:** The initial source bundle does not contain `package-lock.json` because npm registry access was unavailable in the creation environment. Run `npm install` to generate it and **commit the lockfile** once full checks succeed. CI currently uses `npm install`, not `npm ci`, until then.
+**Reproducible installs:** `package-lock.json` is committed and GitHub Actions runs `npm ci`. Update dependency versions intentionally, inspect the resulting lockfile diff, and run the complete check suite before merging.
 
 ## How it works
 

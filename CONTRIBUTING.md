@@ -4,7 +4,7 @@ Thanks for considering a contribution. This project prioritizes functional corre
 
 ## Local workflow
 
-1. Fork the repository, create a focused feature branch, and run `npm install`.
+1. Fork the repository, create a focused feature branch, and run `npm ci`.
 2. Use `npm run dev` for the web app and local relay.
 3. Add a regression test for each bug fix or behavior change.
 4. Run `npm test`, `npm run typecheck`, `npm run build`, and `npm run test:e2e` before opening a PR.
