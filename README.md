@@ -62,6 +62,10 @@ npm.cmd run dev:server
 npm.cmd run dev:web
 ```
 
+### Windows: LevelDB `LOCK` watcher errors
+
+The relay stores runtime data under `.syncverse-data/`. Vite excludes that directory from its file watcher to avoid Windows `EBUSY` errors on LevelDB's `LOCK` file. If you see this warning on an older checkout, stop the development server with Ctrl+C, run `git pull`, and restart with `npm.cmd run dev`. You do not need to delete the database or its lock file.
+
 ### Configure another relay
 
 Copy `.env.example` to `.env.local`, and change `VITE_SYNCVERSE_WS_URL` to your accessible WebSocket endpoint. For a deployed HTTPS frontend, use a `wss://` endpoint. Without that variable, production hosts do not automatically connect to an insecure default endpoint; the workspace will remain **Local only**.
