@@ -45,3 +45,47 @@ test('new users can change display name and document titles sync between session
     await expect(a.getByText('Morgan')).toBeVisible();
   } finally { await aContext.close(); await bContext.close(); }
 });
+
+test('offline edits converge with online edits after reconnecting', async ({ browser }) => {
+  test.setTimeout(65000);
+  const onlineContext = await browser.newContext();
+  const offlineContext = await browser.newContext();
+  const online = await onlineContext.newPage();
+  const offline = await offlineContext.newPage();
+  try {
+    await online.goto('/');
+    await online.getByRole('button', { name: /Create a document/i }).click();
+    await offline.goto(online.url());
+    await expect(online.getByText('Live', { exact: true })).toBeVisible();
+    await expect(offline.getByText('Live', { exact: true })).toBeVisible();
+
+    const onlineEditor = online.locator('.cm-content');
+    const offlineEditor = offline.locator('.cm-content');
+    await onlineEditor.fill('Shared starting point');
+    await expect(offlineEditor).toContainText('Shared starting point');
+
+    await offlineContext.setOffline(true);
+    await expect(offline.getByText('Offline', { exact: true })).toBeVisible({ timeout: 15000 });
+
+    await offlineEditor.press('End');
+    await offlineEditor.press('Enter');
+    await offlineEditor.type('Change authored while offline');
+
+    await onlineEditor.press('End');
+    await onlineEditor.press('Enter');
+    await onlineEditor.type('Change authored while online');
+
+    await offlineContext.setOffline(false);
+    await expect(offline.getByText('Live', { exact: true })).toBeVisible({ timeout: 25000 });
+    await expect(onlineEditor).toContainText('Change authored while offline', { timeout: 25000 });
+    await expect(offlineEditor).toContainText('Change authored while online', { timeout: 25000 });
+
+    await offline.reload();
+    await expect(offline.locator('.cm-content')).toContainText('Change authored while offline');
+    await expect(offline.locator('.cm-content')).toContainText('Change authored while online');
+  } finally {
+    await offlineContext.setOffline(false);
+    await onlineContext.close();
+    await offlineContext.close();
+  }
+});
