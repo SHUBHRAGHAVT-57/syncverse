@@ -64,8 +64,8 @@ test('offline edits converge with online edits after reconnecting', async ({ bro
     await onlineEditor.fill('Shared starting point');
     await expect(offlineEditor).toContainText('Shared starting point');
 
-    await offlineContext.setOffline(true);
-    await expect(offline.getByText('Offline', { exact: true })).toBeVisible({ timeout: 15000 });
+    await offline.getByRole('button', { name: 'Pause sync' }).click();
+    await expect(offline.getByText('Offline', { exact: true })).toBeVisible();
 
     await offlineEditor.press('End');
     await offlineEditor.press('Enter');
@@ -75,7 +75,7 @@ test('offline edits converge with online edits after reconnecting', async ({ bro
     await onlineEditor.press('Enter');
     await onlineEditor.type('Change authored while online');
 
-    await offlineContext.setOffline(false);
+    await offline.getByRole('button', { name: 'Resume sync' }).click();
     await expect(offline.getByText('Live', { exact: true })).toBeVisible({ timeout: 25000 });
     await expect(onlineEditor).toContainText('Change authored while offline', { timeout: 25000 });
     await expect(offlineEditor).toContainText('Change authored while online', { timeout: 25000 });
@@ -84,7 +84,6 @@ test('offline edits converge with online edits after reconnecting', async ({ bro
     await expect(offline.locator('.cm-content')).toContainText('Change authored while offline');
     await expect(offline.locator('.cm-content')).toContainText('Change authored while online');
   } finally {
-    await offlineContext.setOffline(false);
     await onlineContext.close();
     await offlineContext.close();
   }

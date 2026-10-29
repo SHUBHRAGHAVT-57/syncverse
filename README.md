@@ -16,7 +16,7 @@ An offline-capable, open-source collaborative Markdown workspace built with Yjs 
 
 - **Live collaborative Markdown editing** using a `Y.Text` CRDT and the CodeMirror 6 Yjs binding.
 - **Presence and remote cursors** via Yjs awareness, plus shared document titles.
-- **Offline edit persistence** via IndexedDB; queued updates can synchronize after connectivity returns.
+- **Offline edit persistence** via IndexedDB; queued updates can synchronize after connectivity returns. A manual pause/resume button lets you deliberately work without the relay.
 - **Local development relay** using the Yjs v13-compatible `y-websocket@2.1.0` server and LevelDB persistence.
 - **Workspace home** with recent links, new-document creation, search, and per-device display name/color.
 - **Markdown preview and export** with raw HTML and external images disabled in the preview.
