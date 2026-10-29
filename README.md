@@ -10,7 +10,7 @@ An offline-capable, open-source collaborative Markdown workspace built with Yjs 
 
 </div>
 
-> **Status — initial implementation, not production software.** The source is written and the pure utility tests run. Until dependencies are installed and browser integration tests pass, live synchronization and deployment remain unverified. No authentication, access control, or end-to-end encryption is implemented. Do not use it for confidential data.
+> **Status — CI-tested development prototype, not production software.** The TypeScript build, six unit tests, and three Chromium multi-browser scenarios pass in GitHub Actions. Real network failure, relay restart recovery, and public deployment remain unverified. There is no authentication, access control, or end-to-end encryption. **Do not use SyncVerse for confidential data.**
 
 ## What the first release contains
 
