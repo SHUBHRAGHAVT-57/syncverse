@@ -12,6 +12,10 @@ An offline-capable, open-source collaborative Markdown workspace built with Yjs 
 
 > **Status — CI-tested development prototype, not production software.** The TypeScript build, six unit tests, and three Chromium multi-browser scenarios pass in GitHub Actions. Real network failure, relay restart recovery, and public deployment remain unverified. There is no authentication, access control, or end-to-end encryption. **Do not use SyncVerse for confidential data.**
 
+Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
+
+**Stack:** React · TypeScript · Vite · CodeMirror 6 · Yjs · IndexedDB · a local Node.js WebSocket relay.
+
 ## What the first release contains
 
 - **Live collaborative Markdown editing** using a `Y.Text` CRDT and the CodeMirror 6 Yjs binding.
@@ -20,7 +24,7 @@ An offline-capable, open-source collaborative Markdown workspace built with Yjs 
 - **Local development relay** using the Yjs v13-compatible `y-websocket@2.1.0` server and LevelDB persistence.
 - **Workspace home** with recent links, new-document creation, search, and per-device display name/color.
 - **Markdown preview and export** with raw HTML and external images disabled in the preview.
-- **Tests** for utility invariants and authored multi-browser collaboration scenarios.
+- **Tests** for utility invariants and multi-browser collaboration scenarios.
 
 ### Product boundaries
 
@@ -70,7 +74,7 @@ The relay stores runtime data under `.syncverse-data/`. Vite excludes that direc
 
 Copy `.env.example` to `.env.local`, and change `VITE_SYNCVERSE_WS_URL` to your accessible WebSocket endpoint. For a deployed HTTPS frontend, use a `wss://` endpoint. Without that variable, production hosts do not automatically connect to an insecure default endpoint; the workspace will remain **Local only**.
 
-The reference Yjs WebSocket server used here is for development. See `docs/ARCHITECTURE.md` and `docs/SECURITY.md` before exposing any host to the internet.
+The reference Yjs WebSocket server used here is for development. See [Architecture](docs/ARCHITECTURE.md) and [Security](docs/SECURITY.md) before exposing any host to the internet.
 
 ## Tests and checks
 
