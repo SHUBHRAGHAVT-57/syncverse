@@ -4,12 +4,12 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 import { Awareness } from 'y-protocols/awareness';
 import { connectionUrl } from './documents';
 import type { Profile } from './documents';
-export type ConnectionState = 'connecting' | 'live' | 'offline' | 'local';
+export type { ConnectionState } from './connection-status';
 export interface Participant { clientId: number; name: string; color: string; local: boolean }
 export interface CollaborationSession {
   document: Y.Doc;
   content: Y.Text;
-  metadata: Y.Map<string>;
+  metadata: Y.Map<unknown>;
   awareness: Awareness;
   persistence: IndexeddbPersistence;
   provider: WebsocketProvider | null;
@@ -18,7 +18,7 @@ export interface CollaborationSession {
 export function makeSession(roomId: string, profile: Profile, wsConfig?: string): CollaborationSession {
   const document = new Y.Doc();
   const content = document.getText('content');
-  const metadata = document.getMap<string>('metadata');
+  const metadata = document.getMap<unknown>('metadata');
   const requestedEndpoint = connectionUrl(window.location.hostname, wsConfig);
   const endpoint = window.location.protocol === 'https:' && requestedEndpoint?.startsWith('ws://') ? null : requestedEndpoint;
   const provider = endpoint ? new WebsocketProvider(endpoint, roomId, document, { connect: true }) : null;
