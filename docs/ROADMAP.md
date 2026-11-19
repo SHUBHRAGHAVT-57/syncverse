@@ -1,36 +1,32 @@
-# SyncVerse roadmap
+﻿# SyncVerse milestones
 
-The roadmap separates **implemented source** from **verified behavior**. Features are not considered release-ready until build, browser and recovery tests pass.
+Finish the current milestone and its evidence before expanding features. These entries describe the local working copy on 2026-11-19, not a newly published release.
 
 ## v0.1 — Collaborative Markdown foundation
 
-- [x] React + TypeScript workspace and responsive editor UI (authored)
-- [x] Y.Text collaborative editor, shared titles, and presence (authored)
-- [x] IndexedDB offline persistence and WebSocket provider (authored)
-- [x] Document links, local recent list, Markdown preview/export (authored)
-- [x] Unit tests for pure state/URL logic (executed successfully)
-- [ ] Install dependencies and generate committed `package-lock.json`
-- [ ] Run full typecheck, production build, browser E2E and accessibility audits
-- [ ] Exercise relay restart/recovery and offline reconnection tests
-- [ ] Test keyboard-only workflow and mobile layout in real browsers
+- [x] Responsive workspace, document links, local recents/search, and editable profiles
+- [x] Y.Text editing, shared titles, presence, IndexedDB, and local WebSocket/LevelDB relay
+- [x] Markdown preview/export and history/selection retained across Preview
+- [x] Peer-safe local undo with an exhausted-stack regression
+- [x] Lockfile and CI configuration using npm ci
+- [x] Execute 17 unit tests, app/test typechecks, build, and 20 Chromium scenarios
+- [x] Execute unexpected socket interruption and owned relay restart/fresh-context restoration
+- [x] Inspect actual desktop/mobile captures and keyboard/narrow-screen interactions
+- [ ] Recheck clean installation and updated workflow on a fresh CI runner
+- [ ] Verify Firefox/WebKit, physical phones, and assistive technology
+- [ ] Address the measured JavaScript bundle-size warning
+- [ ] Exercise storage denial/quota, prolonged partitions, and disk/power-loss recovery
 
-## v0.2 — Better collaboration
+Evidence: [Verification](VERIFICATION.md). Rationale: [Engineering decisions](ENGINEERING.md).
 
-- [ ] Structured rich text and shared comments
-- [ ] Collaborative board and structured task schema
-- [ ] Presence panel that distinguishes connection state from stale members
-- [ ] Import/export enhancements and conflict-resistant document naming UX
+## Next — Safe collaboration service
 
-## v0.3 — Security and accounts
+- [ ] Authentication and server-enforced room permissions
+- [ ] TLS, origin validation, rate limits, and privacy-safe observability
+- [ ] Durable persistence, backups, retention, and restore drills
+- [ ] Load tests and a multi-process/scaling strategy
+- [ ] Browser/accessibility matrix and measured performance/recovery budgets
 
-- [ ] Authentication and per-room authorization
-- [ ] Read-only roles and permission enforcement at the relay
-- [ ] Encryption in transit, data retention and backup/recovery policy
-- [ ] Abuse/rate limit controls and deployment observability
+## Later — Product expansion
 
-## v1.0 — Production product
-
-- [ ] Durable multi-user backend, scaling and load tests
-- [ ] Audit trails and workspace management
-- [ ] Accessibility compliance and browser matrix
-- [ ] Benchmarked performance and recoverability SLOs
+Rich-text structures, comments, boards, audit trails, and workspace management remain proposals. They should not displace the reliability/security gates above. No production availability, encryption guarantee, or delivery date is promised.

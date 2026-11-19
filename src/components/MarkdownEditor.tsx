@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
-import { defaultKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicSetup } from 'codemirror';
-import { yCollab } from 'y-codemirror.next';
+import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next';
 import * as Y from 'yjs';
 import type { CollaborationSession } from '../lib/collaboration';
 export default function MarkdownEditor({ session }: { session: CollaborationSession }) {
@@ -13,9 +12,10 @@ export default function MarkdownEditor({ session }: { session: CollaborationSess
     if (!node.current) return;
     const undo = new Y.UndoManager(session.content);
     const state = EditorState.create({ doc: session.content.toString(), extensions: [
+      // Local-origin undo must consume the shortcut before CodeMirror's native history.
+      keymap.of(yUndoManagerKeymap),
       basicSetup,
       markdown(),
-      keymap.of(defaultKeymap),
       placeholder('Start with a thought, a heading, or a shared idea...'),
       EditorView.lineWrapping,
       EditorView.contentAttributes.of({ 'aria-label': 'Collaborative Markdown editor' }),

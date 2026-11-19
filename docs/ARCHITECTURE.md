@@ -35,8 +35,9 @@ Local changes are preserved in IndexedDB (subject to browser quota, private-mode
 ## Reliability strategy
 
 - Node pure-unit tests: URL parsing, room validation, recent-history integrity, and socket URL safety.
-- Browser E2E: two separate browser contexts, editing and merging, reload persistence, shared title, profile identity.
-- Upcoming: network partition/rejoin test, persistence across relay restart, property-based concurrent operation tests, accessibility audits, and production load testing.
+- Browser E2E: independent contexts, editing/merging, reload persistence, titles, profiles, Preview selection/history, and peer-safe local undo. The editor stays mounted during Preview, and the Yjs keymap precedes native history; see [Engineering decisions](ENGINEERING.md).
+- Recovery: unexpected socket closure with automatic reconnect, plus owned relay restart, offline merging, and fresh-context LevelDB restoration.
+- Still required: prolonged partitions, crash/power-loss/storage-error coverage, broader browsers, assistive-technology audits, and production load testing. [Current verification](VERIFICATION.md) separates executed checks from those limits.
 
 ## Scaling path
 

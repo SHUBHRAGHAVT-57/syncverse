@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { WebSocketRoute } from '@playwright/test';
 test('two independent browsers merge concurrent edits and restore changes after reload', async ({ browser }) => {
   const first = await browser.newContext();
   const second = await browser.newContext();
@@ -86,5 +87,56 @@ test('offline edits converge with online edits after reconnecting', async ({ bro
   } finally {
     await onlineContext.close();
     await offlineContext.close();
+  }
+});
+
+test('an unexpected socket disconnect reconnects and merges pending edits automatically', async ({ browser }) => {
+  test.setTimeout(65000);
+  const first = await browser.newContext();
+  const second = await browser.newContext();
+  let blocked = false;
+  let socket: WebSocketRoute | undefined;
+  try {
+    const a = await first.newPage();
+    const b = await second.newPage();
+    await b.routeWebSocket('ws://127.0.0.1:1234/**', route => {
+      socket = route;
+      if (blocked) void route.close();
+      else route.connectToServer();
+    });
+    await a.goto('/');
+    await a.getByRole('button', { name: 'Create a document', exact: true }).click();
+    await b.goto(a.url());
+    await expect(a.locator('.status-label')).toHaveText('Live');
+    await expect(b.locator('.status-label')).toHaveText('Live');
+    const aEditor = a.locator('.cm-content');
+    const bEditor = b.locator('.cm-content');
+    await aEditor.fill('Shared starting point');
+    await expect(bEditor).toContainText('Shared starting point');
+
+    blocked = true;
+    await socket!.close({ code: 1011, reason: 'Test network interruption' });
+    await expect(b.locator('.sync-status')).toContainText('Edits pending sync');
+    await expect(b.getByRole('button', { name: 'Pause sync' })).toHaveAttribute('aria-pressed', 'false');
+    await bEditor.press('ControlOrMeta+End');
+    await bEditor.press('Enter');
+    await bEditor.pressSequentially('Written while disconnected');
+    await aEditor.press('ControlOrMeta+End');
+    await aEditor.press('Enter');
+    await aEditor.pressSequentially('Written while connected');
+
+    blocked = false;
+    await expect(b.locator('.status-label')).toHaveText('Live', { timeout: 25000 });
+    for (const editor of [aEditor, bEditor]) {
+      await expect(editor).toContainText('Shared starting point');
+      await expect(editor).toContainText('Written while disconnected');
+      await expect(editor).toContainText('Written while connected');
+    }
+    await b.reload();
+    await expect(bEditor).toContainText('Written while disconnected');
+    await expect(bEditor).toContainText('Written while connected');
+  } finally {
+    await first.close();
+    await second.close();
   }
 });

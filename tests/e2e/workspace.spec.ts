@@ -111,7 +111,6 @@ test('document-first workspace keeps creation visible and search recoverable', a
   await expect(page.getByRole('button', { name: 'Write', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
-// A document opened from the end of a long recent list must begin at its controls.
 test('opening a document resets the library scroll position', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 740 });
   await page.goto('/');

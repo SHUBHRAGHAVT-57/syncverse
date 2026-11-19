@@ -16,6 +16,10 @@ Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
 
 **Stack:** React · TypeScript · Vite · CodeMirror 6 · Yjs · IndexedDB · a local Node.js WebSocket relay.
 
+![SyncVerse editing a sample document with two demo browser sessions](docs/screenshots/room-desktop.png)
+
+Actual app capture, 2026-11-19; sample document and participants. [Desktop/mobile walkthrough](docs/WALKTHROUGH.md) · [Engineering decisions](docs/ENGINEERING.md) · [Current verification](docs/VERIFICATION.md).
+
 ## What the first release contains
 
 - **Live collaborative Markdown editing** using a `Y.Text` CRDT and the CodeMirror 6 Yjs binding.
@@ -24,6 +28,7 @@ Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
 - **Local development relay** using the Yjs v13-compatible `y-websocket@2.1.0` server and LevelDB persistence.
 - **Workspace home** with recent links, new-document creation, search, and per-device display name/color.
 - **Markdown preview and export** with raw HTML and external images disabled in the preview.
+- **Local undo/redo and selection retained across Preview.** Local undo preserves edits received from peers.
 - **Tests** for utility invariants and multi-browser collaboration scenarios.
 
 ### Product boundaries
@@ -83,11 +88,14 @@ npm.cmd test         # Pure utility tests, Node built-in runner
 npm.cmd run typecheck
 npm.cmd run build
 npm.cmd run test:e2e # Requires npm.cmd exec -- playwright install chromium once
+npm.cmd run test:recovery # Stop the development relay first; this suite owns port 1234
 ```
 
 End-to-end tests run a Chromium browser and start the relay/web processes automatically. Run `npm exec -- playwright install chromium` when Playwright reports a missing browser. The `.github/workflows/ci.yml` workflow executes build, tests, and two-browser scenarios on pull requests and pushes.
 
 **Reproducible installs:** `package-lock.json` is committed and GitHub Actions runs `npm ci`. Update dependency versions intentionally, inspect the resulting lockfile diff, and run the complete check suite before merging.
+
+The recovery suite starts an owned relay with a disposable database. It interrupts/restarts the process, merges edits made during the outage, then closes the original clients and checks restoration from a fresh browser after another restart. It refuses to run if port 1234 is occupied. [Current verification](docs/VERIFICATION.md) distinguishes executed results from the clean-install limitation and the updated CI workflow, which has not yet run remotely.
 
 ## How it works
 
@@ -108,7 +116,7 @@ End-to-end tests run a Chromium browser and start the relay/web processes automa
 
 Yjs handles concurrent text operations with mergeable CRDT document updates. CodeMirror's binding handles editor updates, awareness-based remote cursors, and local undo tracking. IndexedDB persists the local document state between visits; the WebSocket provider distributes edits between browsers.
 
-See [Architecture](docs/ARCHITECTURE.md), [Security](docs/SECURITY.md), and [Roadmap](docs/ROADMAP.md).
+See [Architecture](docs/ARCHITECTURE.md), [Engineering decisions](docs/ENGINEERING.md), [Security](docs/SECURITY.md), and [Roadmap](docs/ROADMAP.md).
 
 ## Repository layout
 
@@ -137,4 +145,4 @@ Pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md). Keep 
 
 ## License
 
-MIT © 2026 Shubh Raghav.
+MIT © 2026 Shubh Raghav for repository code covered by [LICENSE](LICENSE). Yjs, CodeMirror, React, Lucide, and other dependencies retain their licenses and copyright notices. Their implementations are not claimed as original SyncVerse code.
