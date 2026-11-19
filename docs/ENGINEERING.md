@@ -22,6 +22,6 @@ Four real-browser regressions failed before the fix: Preview undo/redo, selected
 
 A separate passing recovery test interrupts its owned relay, permits edits from two disconnected clients, restarts against the same LevelDB database, and checks convergence. After closing all original clients, another restart and fresh browser context restore text/title without an existing browser cache. A socket-proxy interruption test also proves automatic reconnect without clicking Pause/Resume.
 
-The production JavaScript artifact remains **1,077.35 kB (352.91 kB gzip)** and triggers Vite's size warning. This is an open loading-performance concern, not a performance achievement. See [Verification](VERIFICATION.md) and the [actual screenshots](WALKTHROUGH.md).
+The local production build emits about **1.08 MB of JavaScript (353 kB gzip)** and triggers Vite's size warning. Loading performance remains open. See [Verification](VERIFICATION.md) and the [walkthrough](WALKTHROUGH.md).
 
 The relay remains development infrastructure. Room links do not enforce permissions; browser storage can fail or be cleared. No accounts, production backups, load-tested service, or physical-device/assistive-technology certification is implied. The [milestones](ROADMAP.md) prioritize those gates before new product features.

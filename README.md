@@ -18,7 +18,7 @@ Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
 
 ![SyncVerse editing a sample document with two demo browser sessions](docs/screenshots/room-desktop.png)
 
-Actual app capture, 2026-11-19; sample document and participants. [Desktop/mobile walkthrough](docs/WALKTHROUGH.md) · [Engineering decisions](docs/ENGINEERING.md) · [Current verification](docs/VERIFICATION.md).
+Actual app capture with a sample document and participants, 19 November 2026. [Watch the two-browser walkthrough](docs/screenshots/collaboration.webm) · [Desktop and mobile screenshots](docs/WALKTHROUGH.md) · [Engineering decisions](docs/ENGINEERING.md) · [Current verification](docs/VERIFICATION.md)
 
 ## What the first release contains
 

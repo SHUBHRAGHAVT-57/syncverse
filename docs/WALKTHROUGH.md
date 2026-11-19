@@ -2,6 +2,8 @@
 
 Actual built-app captures from 2026-11-19, using a local relay and two independent Chrome contexts. “Demo writer,” “Demo collaborator,” and both documents are sample data created through the app. Remote fonts were blocked to exercise fallback typography. Desktop uses 1440×1000 CSS pixels; mobile uses a 390×844 emulated viewport.
 
+[Watch the two-browser collaboration walkthrough (WebM)](screenshots/collaboration.webm). The clip shows four checkpoints from separate browser sessions. Browser B joins and edits, loses its WebSocket, then reconnects. Both sessions continue writing during the interruption and export identical Markdown after reconnection. The recording uses sample text and has no audio.
+
 ## Create and return to a draft
 
 Run `npm run dev`, open `http://127.0.0.1:5173`, and choose **Create a document**. Rename it from the room header. **Back to workspace** shows device-local recents; search filters titles and the remove action forgets a link without deleting the shared document.
