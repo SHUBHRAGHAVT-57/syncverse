@@ -16,13 +16,17 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Typecheck and build
-        run: npm run build
+        run: |
+          npm run typecheck
+          npm run build
       - name: Pure unit tests
         run: npm test
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: E2E collaborative editing tests
         run: npm run test:e2e
+      - name: Relay restart and persistence recovery
+        run: npm run test:recovery
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

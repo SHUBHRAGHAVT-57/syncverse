@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
-import { defaultKeymap } from '@codemirror/commands';
+import { EditorState, Prec, Transaction } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicSetup } from 'codemirror';
-import { yCollab } from 'y-codemirror.next';
+import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next';
 import * as Y from 'yjs';
+import { editorAwareness } from '../lib/collaboration';
 import type { CollaborationSession } from '../lib/collaboration';
 export default function MarkdownEditor({ session }: { session: CollaborationSession }) {
   const node = useRef<HTMLDivElement>(null);
@@ -13,9 +13,22 @@ export default function MarkdownEditor({ session }: { session: CollaborationSess
     if (!node.current) return;
     const undo = new Y.UndoManager(session.content);
     const state = EditorState.create({ doc: session.content.toString(), extensions: [
+      Prec.high(keymap.of(yUndoManagerKeymap)),
+      Prec.high(EditorView.domEventHandlers({
+        beforeinput(event) {
+          if (event.inputType === 'historyUndo') undo.undo();
+          else if (event.inputType === 'historyRedo') undo.redo();
+          else return false;
+          event.preventDefault();
+          return true;
+        },
+      })),
+      // Yjs owns text history. CodeMirror still tracks selection-only changes.
+      EditorState.transactionExtender.of(transaction =>
+        transaction.docChanged ? { annotations: Transaction.addToHistory.of(false) } : null,
+      ),
       basicSetup,
       markdown(),
-      keymap.of(defaultKeymap),
       placeholder('Start with a thought, a heading, or a shared idea...'),
       EditorView.lineWrapping,
       EditorView.contentAttributes.of({ 'aria-label': 'Collaborative Markdown editor' }),
@@ -28,7 +41,7 @@ export default function MarkdownEditor({ session }: { session: CollaborationSess
         '.cm-selectionBackground': { backgroundColor: '#735bd755 !important' },
         '&.cm-focused': { outline: 'none' }
       }),
-      yCollab(session.content, session.awareness, { undoManager: undo })
+      yCollab(session.content, editorAwareness(session.awareness), { undoManager: undo })
     ] });
     const view = new EditorView({ state, parent: node.current });
     return () => { view.destroy(); undo.destroy(); };
