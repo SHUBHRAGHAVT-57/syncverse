@@ -125,3 +125,54 @@ test('opening a document resets the library scroll position', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Back to workspace' })).toBeInViewport({ ratio: 1 });
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+test('a delayed clipboard failure only offers manual copying in its active room', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => new Promise<void>((_, reject) => {
+        window.addEventListener('test-reject-copy', () => reject(new DOMException('Clipboard blocked', 'NotAllowedError')), { once: true });
+      }) },
+    });
+    window.prompt = (_, value) => {
+      sessionStorage.setItem('test-manual-link', value ?? '');
+      return null;
+    };
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create a document', exact: true }).click();
+  const roomLink = page.url();
+  const copy = page.getByRole('button', { name: 'Copy document link', exact: true });
+  const rejectCopy = () => page.evaluate(async () => {
+    sessionStorage.removeItem('test-manual-link');
+    window.dispatchEvent(new Event('test-reject-copy'));
+    await Promise.resolve();
+    return sessionStorage.getItem('test-manual-link');
+  });
+
+  await copy.click();
+  expect(await rejectCopy()).toBe(roomLink);
+
+  await copy.click();
+  await page.getByRole('button', { name: 'Back to workspace' }).click();
+  await expect(page.getByRole('button', { name: 'Create a document', exact: true })).toBeVisible();
+  expect(await rejectCopy()).toBeNull();
+});
+
+test('copying the room link again restarts the feedback timer', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => {} } });
+  });
+  await page.clock.install();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create a document', exact: true }).click();
+  const copy = page.getByRole('button', { name: 'Copy document link', exact: true });
+  const copied = page.getByRole('button', { name: 'Link copied', exact: true });
+  await copy.click();
+  await expect(copied).toBeVisible();
+  await page.clock.fastForward(1800);
+  await copied.click();
+  await page.clock.fastForward(800);
+  await expect(copied).toBeVisible({ timeout: 500 });
+  await page.clock.fastForward(1800);
+  await expect(copy).toBeVisible();
+});

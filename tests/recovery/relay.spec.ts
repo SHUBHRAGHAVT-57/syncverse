@@ -7,37 +7,47 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import type { BrowserContext } from '@playwright/test';
 
 const app = fileURLToPath(new URL('../../', import.meta.url));
 
 test('relay restart recovers pending edits and persisted content without an existing browser cache', async ({ browser }, testInfo) => {
   test.setTimeout(90000);
+  const endpoint = new URL(testInfo.config.metadata.relayUrl);
+  const host = endpoint.hostname;
+  const port = Number(endpoint.port || '80');
+  expect(endpoint.protocol).toBe('ws:');
+  expect(host).toBe('127.0.0.1');
+  expect(port).toBeGreaterThan(0);
+
   // Own the relay process and a disposable database; never interrupt a developer's relay.
   await new Promise<void>((accept, reject) => {
     const probe = createServer();
     probe.once('error', reject);
-    probe.listen(1234, '127.0.0.1', () => probe.close(() => accept()));
+    probe.listen(port, host, () => probe.close(() => accept()));
   });
   const data = await mkdtemp(join(tmpdir(), 'syncverse-relay-'));
-  const contexts = [await browser.newContext(), await browser.newContext()];
+  const contexts: BrowserContext[] = [];
   let relay: ChildProcess | undefined;
   let relayLog = '';
 
   async function startRelay() {
-    relay = spawn(process.execPath, [join(app, 'node_modules/y-websocket/bin/server.cjs')], {
+    const child = spawn(process.execPath, [join(app, 'node_modules/y-websocket/bin/server.cjs')], {
       cwd: app,
       windowsHide: true,
-      env: { ...process.env, HOST: '127.0.0.1', PORT: '1234', YPERSISTENCE: data },
+      env: { ...process.env, HOST: host, PORT: String(port), YPERSISTENCE: data },
     });
-    relay.stdout?.on('data', chunk => { relayLog += String(chunk); });
-    relay.stderr?.on('data', chunk => { relayLog += String(chunk); });
-    let startupError: Error | undefined;
-    relay.once('error', error => { startupError = error; });
-    await expect.poll(async () => {
-      if (startupError) throw startupError;
-      if (relay!.exitCode !== null) throw new Error(`Relay exited: ${relayLog}`);
-      try { return (await fetch('http://127.0.0.1:1234')).ok; }
-      catch { return false; }
+    let startupLog = '';
+    child.stdout?.on('data', chunk => {
+      startupLog += String(chunk);
+      relayLog += String(chunk);
+    });
+    child.stderr?.on('data', chunk => { relayLog += String(chunk); });
+    await once(child, 'spawn');
+    relay = child;
+    await expect.poll(() => {
+      if (child.exitCode !== null || child.signalCode !== null) throw new Error(`Relay exited: ${relayLog}`);
+      return startupLog.includes(`running at '${host}' on port ${port}`);
     }).toBe(true);
   }
 
@@ -50,10 +60,16 @@ test('relay restart recovers pending edits and persisted content without an exis
     relay = undefined;
   }
 
+  async function newClient() {
+    const context = await browser.newContext();
+    contexts.push(context);
+    return context.newPage();
+  }
+
   try {
     await startRelay();
-    const a = await contexts[0].newPage();
-    const b = await contexts[1].newPage();
+    const a = await newClient();
+    const b = await newClient();
     await a.goto('/');
     await a.getByRole('button', { name: 'Create a document', exact: true }).click();
     const url = a.url();
@@ -88,19 +104,21 @@ test('relay restart recovers pending edits and persisted content without an exis
 
     // With both original clients gone, a fresh context can only restore from LevelDB.
     await Promise.all(contexts.map(context => context.close()));
+    contexts.length = 0;
     await stopRelay();
     await startRelay();
-    const fresh = await browser.newContext();
-    contexts.push(fresh);
-    const restored = await fresh.newPage();
+    const restored = await newClient();
+    const room = new URL(url).searchParams.get('room');
+    const restoredSocket = restored.waitForEvent('websocket', socket => new URL(socket.url()).pathname === `/${room}`);
     await restored.goto(url);
     await expect(restored.locator('.status-label')).toHaveText('Live');
+    expect(new URL((await restoredSocket).url()).origin).toBe(endpoint.origin);
     await expect(restored.getByRole('button', { name: 'Rename document' })).toHaveText('Recovery notes');
     for (const text of ['Before relay restart', 'Offline edit from A', 'Offline edit from B']) {
       await expect(restored.locator('.cm-content')).toContainText(text);
     }
   } finally {
-    await Promise.all(contexts.map(context => context.close()));
+    await Promise.allSettled(contexts.map(context => context.close()));
     await stopRelay();
     await testInfo.attach('relay-log', { body: relayLog, contentType: 'text/plain' });
     const target = resolve(data);

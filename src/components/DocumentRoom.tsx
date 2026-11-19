@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Check, ChevronDown, Clipboard, Cloud, CloudOff, Download, Edit3, Eye, FileText, Link2, LoaderCircle, Pencil, ShieldAlert, Wifi, Users, UserRound } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cleanTitle } from '../lib/documents';
 import { connectionState } from '../lib/connection-status';
 import type { Profile } from '../lib/documents';
-import { makeSession, participantsFromAwareness } from '../lib/collaboration';
+import { makeSession, participantsFromAwareness, setAwarenessProfile } from '../lib/collaboration';
 import type { CollaborationSession, ConnectionState, Participant } from '../lib/collaboration';
 import { rememberDocument } from '../lib/storage';
 import MarkdownEditor from './MarkdownEditor';
@@ -31,6 +31,7 @@ export default function DocumentRoom({ roomId, profile, onBack, onEditProfile }:
   const [text, setText] = useState(() => session.content.toString());
   const [tab, setTab] = useState<'edit'|'preview'>('edit');
   const [copied, setCopied] = useState(false);
+  const copyFeedback = useRef<{ request: number; timer?: number }>({ request: 0 });
   const shareUrl = useMemo(() => `${window.location.origin}${window.location.pathname}?room=${roomId}`, [roomId]);
   useEffect(() => {
     const onMeta = () => {
@@ -63,7 +64,14 @@ export default function DocumentRoom({ roomId, profile, onBack, onEditProfile }:
       session.destroy();
     };
   }, [roomId, session]);
-  useEffect(() => { session.awareness.setLocalStateField('user', { ...profile, colorLight: `${profile.color}40` }); }, [profile, session]);
+  useEffect(() => { setAwarenessProfile(session.awareness, profile); }, [profile, session]);
+  useLayoutEffect(() => {
+    const feedback = copyFeedback.current;
+    return () => {
+      feedback.request += 1;
+      window.clearTimeout(feedback.timer);
+    };
+  }, []);
   useEffect(() => { if (!editingTitle) setDraftTitle(title); }, [title, editingTitle]);
   const saveTitle = useCallback(() => {
     const cleaned = cleanTitle(draftTitle);
@@ -83,8 +91,18 @@ export default function DocumentRoom({ roomId, profile, onBack, onEditProfile }:
     }
   }
   async function copyLink() {
-    try { await navigator.clipboard.writeText(shareUrl); setCopied(true); window.setTimeout(() => setCopied(false), 2400); }
-    catch { window.prompt('Copy the document link:', shareUrl); }
+    const feedback = copyFeedback.current;
+    const request = ++feedback.request;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      if (request === feedback.request) window.prompt('Copy the document link:', shareUrl);
+      return;
+    }
+    if (request !== feedback.request) return;
+    window.clearTimeout(feedback.timer);
+    setCopied(true);
+    feedback.timer = window.setTimeout(() => setCopied(false), 2400);
   }
   const statusName = syncPaused ? 'Sync paused · Edits pending sync' : connection === 'live' ? 'Connected · Live sync' : connection === 'connecting' ? 'Connecting and synchronizing…' : connection === 'offline' ? 'Disconnected · Edits pending sync' : 'Local only · Configure a sync server';
   return <div className="room-shell">
@@ -94,7 +112,7 @@ export default function DocumentRoom({ roomId, profile, onBack, onEditProfile }:
       <div className="room-header-right"><button className="mobile-profile-button" aria-label="Edit display name" title="Edit profile" onClick={onEditProfile}><UserRound size={18}/></button><div className="status" title={statusName}><span className={`status-dot ${connection}`}/><span className="status-label">{connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : connection === 'local' ? 'Local only' : 'Offline'}</span></div><div className="vertical-rule"/><button type="button" className="sync-toggle" aria-label={syncPaused ? "Resume sync" : "Pause sync"} title={syncPaused ? "Resume collaboration" : "Work offline temporarily"} aria-pressed={syncPaused} disabled={!session.provider} onClick={toggleSync}>{syncPaused ? <CloudOff size={17}/> : <Wifi size={17}/>}</button><button className="share-btn" aria-label={copied ? "Link copied" : "Copy document link"} onClick={copyLink}>{copied ? <Check size={17}/> : <Link2 size={17}/>}<span>{copied ? 'Copied!' : 'Share link'}</span></button></div>
     </header>
     <div className="room-grid">
-      <aside className="room-rail"><div className="rail-top"><span className="rail-kicker">Document</span><div className="rail-section-active"><FileText size={17}/> Content</div></div><div className="rail-divider"/><div className="rail-top"><span className="rail-kicker">In this document <span className="member-count">{participants.length}</span></span><div className="members">{participants.map(person => <div className="member" key={person.clientId}><span className="member-avatar" style={{background:person.color}}>{person.name.charAt(0).toUpperCase()}</span><div><b>{person.name}</b><small>{person.local ? 'You' : 'Editing this document'}</small></div><span className="member-online"/></div>)}</div><button className="invite-link" onClick={copyLink}><Link2 size={15}/> Invite by link <ArrowUpRight size={14}/></button></div><div className="rail-spacer"/><div className="privacy-note"><ShieldAlert size={18}/><b>Link access enabled</b><p>Anyone with the URL can edit this document. Do not enter confidential information.</p></div><button className="rail-profile" onClick={onEditProfile}>Edit display name <ChevronDown size={15}/></button></aside>
+      <aside className="room-rail"><div className="rail-top"><span className="rail-kicker">Document</span><div className="rail-section-active"><FileText size={17}/> Content</div></div><div className="rail-divider"/><div className="rail-top"><span className="rail-kicker">In this document <span className="member-count">{participants.length}</span></span><div className="members">{participants.map(person => <div className="member" key={person.clientId}><span className="member-avatar" style={{ backgroundColor: person.color }}>{person.name.charAt(0).toUpperCase()}</span><div><b>{person.name}</b><small>{person.local ? 'You' : 'Editing this document'}</small></div><span className="member-online"/></div>)}</div><button className="invite-link" onClick={copyLink}><Link2 size={15}/> Invite by link <ArrowUpRight size={14}/></button></div><div className="rail-spacer"/><div className="privacy-note"><ShieldAlert size={18}/><b>Link access enabled</b><p>Anyone with the URL can edit this document. Do not enter confidential information.</p></div><button className="rail-profile" onClick={onEditProfile}>Edit display name <ChevronDown size={15}/></button></aside>
       <main className="room-main"><div className="editor-heading"><div><h1>{title}</h1><p>Markdown, with room for every idea.</p></div><div className="editor-actions"><button className="tool-button" title="Download Markdown file" onClick={()=>downloadText(text, title)}><Download size={17}/> <span>Export</span></button></div></div>
         <div className="editor-panel"><div className="editor-toolbar"><div className="tab-switch"><button aria-pressed={tab === 'edit'} className={tab === 'edit' ? 'selected' : ''} onClick={()=>setTab('edit')}><Edit3 size={16}/> Write</button><button aria-pressed={tab === 'preview'} className={tab === 'preview' ? 'selected' : ''} onClick={()=>setTab('preview')}><Eye size={16}/> Preview</button></div><div className="editor-meta"><span className="markdown-pill">MARKDOWN</span><span className="toolbar-dot"/><span>{text.trim() ? text.trim().split(/\s+/).length : 0} words</span></div></div>
           {/* Keep selection and local undo history alive while Preview is shown. */}

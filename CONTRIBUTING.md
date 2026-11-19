@@ -7,7 +7,7 @@ Thanks for considering a contribution. This project prioritizes functional corre
 1. Fork the repository, create a focused feature branch, and run `npm ci`.
 2. Use `npm run dev` for the web app and local relay.
 3. Add a regression test for each bug fix or behavior change.
-4. Run `npm test`, `npm run typecheck`, `npm run build`, `npm run test:e2e`, and `npm run test:recovery` before opening a PR. Stop `npm run dev` before the recovery suite: it owns port 1234 and uses a disposable relay database.
+4. Run `npm test`, `npm run typecheck`, `npm run build`, `npm run test:e2e`, and `npm run test:recovery` before opening a PR. The browser suites take care of starting and stopping their loopback services. Use free ports for each suite. [Test setup](README.md#tests-and-checks)
 5. Document any changes to the persistence format, authentication assumptions, or public APIs.
 
 Keep changes scoped; never commit `.env`, `node_modules`, `.syncverse-data`, credentials, or user documents. No hardcoded service tokens or fabricated test results. For vulnerability reports, see [SECURITY.md](docs/SECURITY.md).

@@ -90,7 +90,7 @@ test('offline edits converge with online edits after reconnecting', async ({ bro
   }
 });
 
-test('an unexpected socket disconnect reconnects and merges pending edits automatically', async ({ browser }) => {
+test('an unexpected socket disconnect reconnects and merges pending edits automatically', async ({ browser }, testInfo) => {
   test.setTimeout(65000);
   const first = await browser.newContext();
   const second = await browser.newContext();
@@ -99,7 +99,7 @@ test('an unexpected socket disconnect reconnects and merges pending edits automa
   try {
     const a = await first.newPage();
     const b = await second.newPage();
-    await b.routeWebSocket('ws://127.0.0.1:1234/**', route => {
+    await b.routeWebSocket(`${testInfo.config.metadata.relayUrl}/**`, route => {
       socket = route;
       if (blocked) void route.close();
       else route.connectToServer();

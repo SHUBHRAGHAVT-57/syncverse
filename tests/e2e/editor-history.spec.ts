@@ -49,6 +49,25 @@ test('preview switching preserves the selected text for continued editing', asyn
   await expect(editor).toHaveText('One careful draft');
 });
 
+test('selection undo and redo preserve document text after the selection history is exhausted', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create a document', exact: true }).click();
+  const editor = page.locator('.cm-content');
+  const selection = () => page.evaluate(() => window.getSelection()?.toString());
+  const text = 'Draft with selectable text';
+  await editor.fill(text);
+  await editor.press('Shift+Home');
+  await expect.poll(selection).toBe(text);
+  await editor.press('ControlOrMeta+u');
+  await expect.poll(selection).toBe('');
+  await editor.press(process.platform === 'darwin' ? 'Meta+Shift+u' : 'Alt+u');
+  await expect.poll(selection).toBe(text);
+
+  await editor.press('ControlOrMeta+u');
+  await editor.press('ControlOrMeta+u');
+  await expect(editor).toHaveText(text);
+});
+
 for (const preview of [false, true]) {
   test(`local undo preserves peer edits${preview ? ' received during preview' : ' with an exhausted undo stack'}`, async ({ browser }) => {
     const first = await browser.newContext();
@@ -92,3 +111,48 @@ for (const preview of [false, true]) {
     }
   });
 }
+
+test('native undo and redo affect only local edits', async ({ browser }) => {
+  const first = await browser.newContext();
+  const second = await browser.newContext();
+  try {
+    const a = await first.newPage();
+    const b = await second.newPage();
+    await a.goto('/');
+    await a.getByRole('button', { name: 'Create a document', exact: true }).click();
+    await b.goto(a.url());
+    await expect(a.locator('.status-label')).toHaveText('Live');
+    await expect(b.locator('.status-label')).toHaveText('Live');
+    const aEditor = a.locator('.cm-content');
+    const bEditor = b.locator('.cm-content');
+    await aEditor.fill('Local draft');
+    await expect(bEditor).toContainText('Local draft');
+    await bEditor.press('End');
+    await bEditor.press('Enter');
+    await bEditor.pressSequentially('Peer addition');
+    await expect(aEditor).toContainText('Peer addition');
+
+    const historyInput = (inputType: 'historyUndo' | 'historyRedo') =>
+      aEditor.evaluate((element, type) => element.dispatchEvent(new InputEvent('beforeinput', {
+        inputType: type,
+        bubbles: true,
+        cancelable: true,
+      })), inputType);
+    await aEditor.focus();
+    expect(await historyInput('historyUndo')).toBe(false);
+    await expect(aEditor).not.toContainText('Local draft');
+    await expect(bEditor).not.toContainText('Local draft');
+    await expect(aEditor).toContainText('Peer addition');
+    await expect(bEditor).toContainText('Peer addition');
+
+    expect(await historyInput('historyUndo')).toBe(false);
+    await expect(aEditor).toContainText('Peer addition');
+    expect(await historyInput('historyRedo')).toBe(false);
+    await expect(aEditor).toContainText('Local draft');
+    await expect(bEditor).toContainText('Local draft');
+    await expect(bEditor).toContainText('Peer addition');
+  } finally {
+    await first.close();
+    await second.close();
+  }
+});

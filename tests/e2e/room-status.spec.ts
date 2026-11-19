@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import type { WebSocketRoute } from '@playwright/test';
 
-test('Live waits for the initial document exchange and resets after pausing', async ({ page }) => {
+test('Live waits for the initial document exchange and resets after pausing', async ({ page }, testInfo) => {
   let socket: WebSocketRoute | undefined;
-  await page.routeWebSocket('ws://127.0.0.1:1234/**', route => { socket = route; });
+  await page.routeWebSocket(`${testInfo.config.metadata.relayUrl}/**`, route => { socket = route; });
   await page.goto('/?room=e3db3fa7-1d94-4ed6-80f3-30a328bad138');
   await expect.poll(() => Boolean(socket)).toBe(true);
   await expect(page.locator('.status-label')).toHaveText('Connecting');

@@ -88,14 +88,14 @@ npm.cmd test         # Pure utility tests, Node built-in runner
 npm.cmd run typecheck
 npm.cmd run build
 npm.cmd run test:e2e # Requires npm.cmd exec -- playwright install chromium once
-npm.cmd run test:recovery # Stop the development relay first; this suite owns port 1234
+npm.cmd run test:recovery
 ```
 
-End-to-end tests run a Chromium browser and start the relay/web processes automatically. Run `npm exec -- playwright install chromium` when Playwright reports a missing browser. The `.github/workflows/ci.yml` workflow executes build, tests, and two-browser scenarios on pull requests and pushes.
+Playwright starts and stops the test services on loopback. The end-to-end suite uses frontend port 5173 and relay port 1234. Recovery uses 5174 and 1235. Set `SYNCVERSE_TEST_WEB_PORT` and `SYNCVERSE_TEST_RELAY_PORT` to use free ports if another process is listening. Run `npm exec -- playwright install chromium` if the browser is missing. GitHub Actions runs both suites on pull requests and pushes to `main`.
 
 **Reproducible installs:** `package-lock.json` is committed and GitHub Actions runs `npm ci`. Update dependency versions intentionally, inspect the resulting lockfile diff, and run the complete check suite before merging.
 
-The recovery suite starts an owned relay with a disposable database. It interrupts/restarts the process, merges edits made during the outage, then closes the original clients and checks restoration from a fresh browser after another restart. It refuses to run if port 1234 is occupied. [Current verification](docs/VERIFICATION.md) distinguishes executed results from the clean-install limitation and the updated CI workflow, which has not yet run remotely.
+The recovery suite starts a relay with a disposable LevelDB database. It stops and restarts the process, merges edits made during the outage, then closes the original clients and checks restoration from a fresh browser after another restart. See the local results and open checks. [Verification](docs/VERIFICATION.md)
 
 ## How it works
 
